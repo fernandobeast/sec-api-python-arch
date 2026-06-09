@@ -3755,3 +3755,70 @@ proxies = {
 queryApi = QueryApi(api_key="YOUR_API_KEY", proxies=proxies)
 downloadApi = DownloadApi(api_key="YOUR_API_KEY", proxies=proxies)
 ```
+
+## Native SEC.gov Equity SDK (No API Key Required)
+
+This package also includes a direct SEC.gov client for developers who want to use the
+official SEC endpoints documented on SEC.gov instead of the hosted sec-api.io APIs. The
+native client focuses on equities traded on U.S. venues such as NASDAQ, NYSE, NYSE
+American/AMEX, NYSE Arca, and OTC markets by validating tickers and CIKs against
+`company_tickers_exchange.json`.
+
+The SDK uses the SEC's public JSON and Atom resources:
+
+- `data.sec.gov/submissions/CIK##########.json` for issuer filing history, current
+  company names, former names, tickers, and exchanges.
+- `data.sec.gov/api/xbrl/companyfacts/CIK##########.json`,
+  `companyconcept`, and `frames` for financial statement XBRL facts converted to JSON.
+- SEC Archives `index.json` files for filing document discovery.
+- EDGAR's current filings Atom feed for polling-based real-time filing streams.
+
+SEC.gov asks automated clients to identify themselves. Pass either `email` or a custom
+`user_agent` when you create the client.
+
+```python
+from sec_api import SecGovEquityApi
+
+sec = SecGovEquityApi(email="developer@example.com")
+
+# 1. Financial statement XBRL-to-JSON converter
+financials = sec.financial_statement(ticker="AAPL")
+
+# 2. Capital structure: outstanding shares, public float, issued/authorized shares
+capital_structure = sec.capital_structure(ticker="AAPL")
+
+# 3. Dilution-related registration statements and prospectuses
+potential_dilution = sec.dilution_filings(
+    ticker="AAPL",
+    start_date="2024-01-01",
+    end_date="2024-12-31",
+)
+
+# 4. Corporate actions: former names and potential action filings
+corporate_actions = sec.corporate_actions(ticker="AAPL", include_documents=False)
+
+# 5. Important events: 8-K and 6-K filings
+events = sec.important_events(ticker="AAPL", size=10)
+
+# 6. Real-time stream API: polling-based stream over EDGAR's current filings Atom feed
+for filing in sec.stream_filings(form_type="8-K", poll_interval=10, stop_after=5):
+    print(filing)
+
+# 7. EDGAR filing query API
+filings = sec.query_filings(ticker="AAPL", form_types=["10-K", "10-Q"], size=20)
+
+# 8. Insider trading: Forms 3, 4, and 5
+insider_filings = sec.insider_trading(ticker="AAPL", size=20)
+```
+
+### Native SDK notes
+
+- The SEC XBRL APIs expose standardized, non-custom taxonomy facts. Company-specific
+  extension tags may still require direct filing document parsing.
+- Public float is derived from the `dei:EntityPublicFloat` fact when an issuer reports
+  it. It is often an annual-report cover-page value, not a live market-data float.
+- Corporate action detection returns former-name metadata from SEC submissions and can
+  optionally scan primary filing documents for phrases such as reverse split, stock
+  split, name change, symbol change, and ticker symbol.
+- The stream API is a respectful polling generator over SEC.gov's current filings Atom
+  feed. It is not a websocket and should use a reasonable `poll_interval`.

@@ -32,6 +32,7 @@ setup(
     keywords=[
         "SEC EDGAR API",
         "SEC Filings API",
+        "Native SEC.gov API",
         "SEC Filing Search API",
         "SEC Full-Text Search API",
         "EDGAR API",
