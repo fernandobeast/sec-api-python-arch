@@ -64,3 +64,8 @@ from sec_api.index import Datasets
 # Other APIs
 from sec_api.index import EdgarEntitiesApi
 from sec_api.index import MappingApi
+
+# Native SEC.gov APIs (no sec-api.io token required)
+from sec_api.sec_gov import SecGovClient
+from sec_api.sec_gov import SecGovEquityApi
+from sec_api.sec_gov import SecGovError
